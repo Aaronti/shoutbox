@@ -1,0 +1,43 @@
+{
+  "description": "It's like shoutbox but worse",
+  "manifest_version": 2,
+  "name": "Shoutbox",
+  "version": "1.0",
+  "homepage_url": "https://forums.wynncraft.com/",
+
+  "icons": 
+  {
+    "48": "icons/icon.png"
+  },
+
+  "browser_specific_settings": 
+  {
+    "gecko": 
+    {
+      "id": "very_loud_box@aarontti.com"
+    },
+    "chrome": 
+    {
+      "id": "very_cool_shoutbox"
+    }
+  },
+
+  "permissions": 
+  [
+    "storage"
+  ],
+
+  "web_accessible_resources": 
+  [
+    "html/shoutbox.html"
+  ],
+
+  "content_scripts": 
+  [
+    {
+      "matches": ["*://forums.wynncraft.com/"],
+      "js": ["shoutbox.js"],
+	    "css": ["css/shoutbox.css"]
+    }
+  ]
+}

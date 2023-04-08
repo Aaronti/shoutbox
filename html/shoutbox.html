@@ -1,0 +1,44 @@
+<div class="section shoutbox">
+	<div class="secondaryContent" class="section" class="sidebar" class="primaryContent">
+		<div class="shoutbox">
+			<h3><a id="shoutboxTitle">Shoutbox</a></h3>
+			<div class="shoutboxGuestContainer">
+				<label for="shoutboxGuestUsername" class="muted">Guest username: </label>
+				<input type="text" id="shoutboxGuestUsername" class="textCtrl" maxlength="16">
+			</div>
+			<div class="shoutboxContainer">
+				<div class="textCtrl" id="shoutboxBox">
+					<ul class="shoutboxMessages"></ul>
+					<div id="shoutboxError" class="muted"></div>
+				</div>
+				<div class="shoutboxControlParent">
+					<div class="shoutboxControls">
+						<input type="text" class="textCtrl" id="shoutboxInputField" placeholder="Enter message..." maxlength="140"></input>
+						<input type="submit" value=">" class="button primary Tooltip" id="shoutButton"></input>
+					</div>
+				</div>
+			</div>
+			<div class="shoutboxOptionsContainer">
+				<!--<h1 >Shoutbox Options</h1>-->
+				<form>
+					<label for="shoutboxLocation">Box location: </label>
+					<select id="shoutboxLocation" class="textCtrl autoSize">
+						<option value="default">Bottom (Original)</option>
+						<option value="middle">Middle</option>
+						<option value="top">Top</option>
+					</select>
+					<br>
+					<label>
+						<input type="checkbox" id="hideCommunityBox"> Hide "Connect with community"</input>
+					</label>
+					<br>
+					<label>
+						<input type="checkbox" id="enableTimestamps"> Show timestamps</input>
+					</label>
+				</form>
+				<script src="options.js"></script>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- The mother of all indentations  -->

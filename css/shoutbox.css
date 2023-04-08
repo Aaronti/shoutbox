@@ -1,0 +1,89 @@
+.shoutboxContainer
+{
+	/* Alternative wider version. Looks nice but isn't authentic */
+	/*
+	width: 107%;
+	margin-left: -4%;*/
+	/*margin-top: -5px;*/
+}
+
+#shoutboxTitle:hover
+{
+	/* Make title look like it's clickable */
+	text-decoration: underline;
+	cursor: pointer;
+}
+#shoutboxTitle:hover::after
+{
+	/* content: " (toggle options)"; */
+}
+ 
+.shoutboxGuestContainer
+{
+	margin: auto;
+	width: 80%;
+}
+
+#shoutboxGuestUsername
+{
+	width: 100%;
+}
+
+#shoutboxBox
+{
+	/* Innermost part of the box with messages in it */
+	overflow: hidden;
+	height: 256px;
+	overflow-y: auto;
+	margin-bottom: 10px;
+}
+
+.shoutboxMessages
+{
+	margin: 3px;
+	font-size: 13px; /* Prevent bad media font size on mobiles */
+	/* color: initial; */ /* Prevent inheriting textCtrl colors */
+}
+
+#shoutboxPfpContainer
+{
+	padding-right: 3px !important;
+	padding-left: 3px !important;
+
+	/* Prevent some shoutbot positions from overriding style */
+	margin-right: 0 !important;
+	float: none !important;
+}
+
+.shoutboxTimestamp
+{
+	display: inline;
+}
+
+#shoutboxPfpImage
+{
+	padding: 0 !important;
+	transform: translate(0, 4px);
+}
+
+.shoutboxControlParent
+{
+	width: 100%;
+    margin: 0 auto;
+}
+
+.shoutboxControls
+{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 5px;
+}
+
+#shoutboxInputField 
+{
+  flex: 1;
+  font-size: 13px;
+  width: 100%;
+}
