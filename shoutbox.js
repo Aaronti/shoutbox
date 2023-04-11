@@ -12,7 +12,7 @@ function addShoutbox()
   const shoutboxElement = document.createElement("div");
   shoutboxElement.id = "shoutbox";
 
-  fetch(chrome.extension.getURL("html/shoutbox.html"))
+  fetch(chrome.runtime.getURL("html/shoutbox.html"))
   .then(response => response.text())
   .then(html => 
   {
@@ -207,6 +207,7 @@ async function initializeControls()
     localhostCheckbox.checked = value;
     saveSetting("useLocalhost", value);
     useLocalhost = value;
+    restartSocket();
     
     // Make checkbox work
     localhostCheckbox.addEventListener("change", function() 
@@ -648,6 +649,18 @@ function initializeWebSocket()
     shoutboxErrorBox.innerText = "";
     connecting = false;
     refreshChatFull();
+
+    // Send extension version to server for future compatibility
+    const manifest = chrome.runtime.getManifest();
+    const version = manifest.version;
+
+    const data = 
+    {
+      type: "connectionInfo",
+      version: version
+    };
+    
+    socket.send(JSON.stringify(data));
   });
 
   socket.addEventListener("message", (event) => 
@@ -737,7 +750,11 @@ function restartSocket()
     return;
   }
 
-  socket.close();
+  if (socket && socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+  {
+    socket.close();
+  }
+
   initializeWebSocket();
 }
 
@@ -746,7 +763,7 @@ function restartSocket()
 
 
 function receiveMessage(data)
-{//console.log(data);
+{
   if (data.type === "message")
   {
     // User message
@@ -766,7 +783,7 @@ function receiveMessage(data)
   }
   else
   {
-    // New thread etc announcements. To-be-implemented if cloudflare ever stops sucking dick
+    // New thread, outdated plugin, etc announcements. To-be-implemented if cloudflare ever stops sucking dick
     receiveGeneric(data);
   }
 }

@@ -1,43 +1,37 @@
 {
-  "description": "It's like shoutbox but worse",
-  "manifest_version": 2,
   "name": "Shoutbox",
-  "version": "1.3",
-  "homepage_url": "https://forums.wynncraft.com/",
-
-  "icons": 
-  {
-    "48": "icons/icon-48.png"
-  },
-
-  "browser_specific_settings": 
-  {
-    "gecko": 
-    {
-      "id": "very_cool_shoutbox@aarontti.com"
-    },
-    "chrome": 
-    {
-      "id": "very_cool_shoutbox"
-    }
-  },
-
-  "permissions": 
-  [
-    "storage"
-  ],
-
+  "version": "1.4",
+  "description": "It's like shoutbox but worse",
+  "manifest_version": 3,
+  "permissions": ["storage"],
   "web_accessible_resources": 
   [
-    "html/shoutbox.html"
+    {
+      "resources": ["html/shoutbox.html"],
+      "matches": ["*://forums.wynncraft.com/*"]
+    }
   ],
-
   "content_scripts": 
   [
     {
-      "matches": ["*://forums.wynncraft.com/"],
+      "matches": ["*://forums.wynncraft.com/*"],
       "js": ["shoutbox.js"],
-	    "css": ["css/shoutbox.css"]
+      "css": ["css/shoutbox.css"]
     }
-  ]
+  ],
+  "icons": 
+  {
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "48": "icons/icon-64.png",
+    "48": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "browser_specific_settings": 
+  {
+    "gecko": 
+	{
+      "id": "very_cool_shoutbox@aarontti.com"
+    }
+  }
 }
