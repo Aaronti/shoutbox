@@ -1,6 +1,8 @@
 // All in one file for your misery
 // Yes, I'm aware of all the bad practices and inconsistencies in this code. No, I do not care
 
+let historyLength = 50;
+
 function addShoutbox() 
 {
   // Get position on page
@@ -46,9 +48,12 @@ async function initializeControls()
   const title = document.getElementById("shoutboxTitle");
   const communityCheckbox = document.getElementById("hideCommunityBox");
   const locationDropdown = document.getElementById("shoutboxLocation");
+  const historyDropdown = document.getElementById("msgHistoryLength");
   const nameContainer = document.querySelector(".shoutboxGuestContainer");
   const nameField = document.getElementById("shoutboxGuestUsername");
   const timestampCheckbox = document.getElementById("enableTimestamps");
+  const historyCheckbox = document.getElementById("removeHistory");
+  const localhostCheckbox = document.getElementById("useLocalhost");
 
 
   // Make "send message" button clickable
@@ -114,6 +119,26 @@ async function initializeControls()
   });
 
 
+  // Set up message history length dropdown 
+  getSetting("msgHistoryLength", "50").then(function(value) 
+  {
+    console.log("retrieving " + value + " messages");
+    // Load and apply saved setting
+    historyDropdown.value = value;
+    saveSetting("msgHistoryLength", value);
+    historyLength = value;
+    refreshChatFull();
+
+    // Make dropdown work
+    historyDropdown.addEventListener("change", function() 
+    {
+      historyLength = this.value;
+      refreshChatFull();
+      saveSetting("msgHistoryLength", this.value);
+    });
+  });
+
+
   // Set up guest username box
   setGuestID();
 
@@ -148,12 +173,55 @@ async function initializeControls()
     // Make checkbox work
     timestampCheckbox.addEventListener("change", function() 
     {
-      // Set state and save option to browser
+      // Set state, save option to browser and scroll to bottom to account for longer messages
       enableTimestamps(this.checked);
       saveSetting("showTimestamps", this.checked);
+      scrollToBottom();
+    });
+  });
+
+
+  // Set up "Show timestamps" checkbox
+  getSetting("clearOldMessages", true).then(function(value) 
+  {
+    // Load and apply saved setting
+    historyCheckbox.checked = value;
+    saveSetting("clearOldMessages", value);
+    clearMessages = value;
+    
+    // Make checkbox work
+    historyCheckbox.addEventListener("change", function() 
+    {
+      // Set state, save option to browser and clear excess messages
+      clearMessages = this.checked;
+      askForHistory();
+      saveSetting("clearOldMessages", this.checked);
+    });
+  });
+
+
+  // Set up "Use localhost server (debug)" checkbox
+  getSetting("useLocalhost", false).then(function(value) 
+  {
+    // Load and apply saved setting
+    localhostCheckbox.checked = value;
+    saveSetting("useLocalhost", value);
+    useLocalhost = value;
+    
+    // Make checkbox work
+    localhostCheckbox.addEventListener("change", function() 
+    {
+      // Set state, save option to browser and clear excess messages
+      useLocalhost = this.checked;
+      restartSocket();
+      saveSetting("useLocalhost", this.checked);
     });
   });
 }
+
+let clearMessages = null;
+let useLocalhost = null;
+
 
 
 function disableCommunitySection(isDisabled)
@@ -429,6 +497,21 @@ function getRealUsernameFromURL(url)
 
 function getCurrentUserID()
 {
+  try 
+  {
+    const profileCard = document.querySelector('.primaryContent.menuHeader');
+    const usernameLink = profileCard.querySelector('a.concealed');
+    const userID = usernameLink.getAttribute('href').match(/(\d+)\/$/)[1];
+
+    return userID;
+  } 
+  catch 
+  {
+    return 0;
+  }
+
+  // STARRY NIGHT EXCLUSIVE LEGACY
+  /*
   // Extract id from profile picture file name
   const miniPfp = document.querySelector(".miniMe");
 
@@ -442,30 +525,44 @@ function getCurrentUserID()
   const userID = pfpSrc.match(/\/(\d+)\.jpg/)[1];   // Use regex to get only id
   
   return userID;
+  */
 }
 
 
 
 function getCurrentUsername()
 {
-  const usernameElement = document.querySelector(".accountUsername");
+  // Starry night, 100% reliable
+  const username1 = document.querySelector(".accountUsername");
+  
+  // Other themes. Reliable so far, but extensive testing needed
+  const profileCard = document.querySelector('.primaryContent.menuHeader');
+  const username2 = profileCard.querySelector('a.concealed');
 
-  if (usernameElement === null)
+  //const username3 = document.querySelector(".username"); // No, could be anyone's username
+
+  if (username1 != null)
   {
-    // If not signed in
-    let guestUsername = document.querySelector("#shoutboxGuestUsername").value;
-    guestUsername = guestUsername.trim().replace(/\s{2,}/g, " ");  // Remove whitespace and double spaces locally as well
-
-    if (guestUsername != "")
-    {
-      return guestUsername + ` (Guest${guestID})`;
-    }
-
-    return "Guest" + guestID;
+    // Logged in username
+    return username1.textContent;
   }
 
-  // Logged in username
-  return usernameElement.textContent;
+  if (username2 != null)
+  {
+    // Logged in username
+    return username2.textContent;
+  }
+  
+  // Not signed in
+  let guestUsername = document.querySelector("#shoutboxGuestUsername").value;
+  guestUsername = guestUsername.trim().replace(/\s{2,}/g, " ");  // Remove whitespace and double spaces locally as well
+
+  if (guestUsername != "")
+  {
+    return guestUsername + ` (Guest${guestID})`;
+  }
+
+  return "Guest" + guestID;
 }
 
 
@@ -485,6 +582,14 @@ async function setGuestID()
   }
   
   guestID = value;
+}
+
+
+
+
+function getUserColor(userID)
+{
+
 }
 
 
@@ -524,8 +629,15 @@ function initializeWebSocket()
     socket.close();
   }
 
-  //socket = new WebSocket("ws://localhost:1195"); // Development
-  socket = new WebSocket("wss://shoutbox.aarontti.com:1195"); // Final
+  if (useLocalhost)
+  {
+    socket = new WebSocket("ws://localhost:1195"); // Development
+  }
+  else
+  {
+    socket = new WebSocket("wss://shoutbox.aarontti.com:1195"); // Final
+  }
+
   const shoutboxErrorBox = document.querySelector("#shoutboxError");
   
 
@@ -535,6 +647,7 @@ function initializeWebSocket()
 
     shoutboxErrorBox.innerText = "";
     connecting = false;
+    refreshChatFull();
   });
 
   socket.addEventListener("message", (event) => 
@@ -543,7 +656,7 @@ function initializeWebSocket()
     var type = parsedData["type"];
 
     //console.log(`Received shoutbox ${type}: ${event.data}`); // Debugging message json
-
+    
     if (type === "history") 
     {
       // Turn message history into messages when it's received
@@ -617,11 +730,23 @@ function connectToShoutbox()
 
 
 
+function restartSocket()
+{
+  if (!socket)
+  {
+    return;
+  }
+
+  socket.close();
+  initializeWebSocket();
+}
+
+
 
 
 
 function receiveMessage(data)
-{
+{//console.log(data);
   if (data.type === "message")
   {
     // User message
@@ -632,6 +757,12 @@ function receiveMessage(data)
     const messageID = data.messageID;
 
     addMessage(username, userID, message, unixTime, messageID);
+
+    // "Make room" by deleting oldest message, if user so desires
+    if (clearMessages)
+    {
+      trimOldMessages();
+    }
   }
   else
   {
@@ -647,12 +778,8 @@ function receiveMessageHistory(history)
   // Clear outdated message list
   messageQueue = [];
   messageIDs = [];
-  const messages = document.querySelectorAll(".shoutboxMessage");
-
-  messages.forEach((message) =>
-  {
-    message.remove();
-  });
+  
+  clearAllMessages();
 
   // Add refreshed messages 
   history.forEach((message) => 
@@ -687,6 +814,66 @@ function removeMessage(messageID)
 }
 
 
+function refreshChatFull()
+{
+  clearAllMessages();
+  askForHistory();
+}
+
+
+
+async function askForHistory()
+{
+  // Manually demand server to send message history
+  const data = 
+  {
+   type: "giveHistory",
+   desiredHistoryLength: historyLength
+  };
+  
+  // If socket is not defined, wait until it is
+  return new Promise((resolve, reject) => 
+  {
+    const intervalId = setInterval(() => 
+    {
+      if (socket) 
+      {
+        clearInterval(intervalId);
+        socket.send(JSON.stringify(data));
+        resolve();
+      }
+    }, 100);
+  });
+}
+
+
+
+// Remove messages that go beyond user-set target for performance
+function trimOldMessages()
+{
+  const shoutboxElement = document.querySelector(".shoutboxMessages");
+  const messages = shoutboxElement.querySelectorAll(".shoutboxMessage");
+
+  if (messages.length > historyLength)
+  {
+    // Remove oldest message
+    messages.item(0).remove();
+  }
+}
+
+
+
+function clearAllMessages()
+{
+  const messages = document.querySelectorAll(".shoutboxMessage");
+
+  messages.forEach((message) =>
+  {
+    message.remove();
+  });
+}
+
+
 
 function sendMessage()
 {
@@ -703,6 +890,7 @@ function sendMessage()
 
   const data = 
   {
+    type: "message",
     username: _username,
     userID: _userID,
     message: _message
