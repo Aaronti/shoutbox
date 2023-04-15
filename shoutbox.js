@@ -48,12 +48,17 @@ async function initializeControls()
   const title = document.getElementById("shoutboxTitle");
   const communityCheckbox = document.getElementById("hideCommunityBox");
   const locationDropdown = document.getElementById("shoutboxLocation");
+  const sizeDropdown = document.getElementById("shoutboxSize");
   const historyDropdown = document.getElementById("msgHistoryLength");
+  const timestampDropdown = document.getElementById("timestampType");
   const nameContainer = document.querySelector(".shoutboxGuestContainer");
   const nameField = document.getElementById("shoutboxGuestUsername");
-  const timestampCheckbox = document.getElementById("enableTimestamps");
   const historyCheckbox = document.getElementById("removeHistory");
   const localhostCheckbox = document.getElementById("useLocalhost");
+  const newThreadCheckbox = document.getElementById("showNewThreads");
+  const greentextCheckbox = document.getElementById("enableGreentext");
+  const idCheckbox = document.getElementById("showIDs");
+  const shoutboxVersion = document.getElementById("shoutboxVersion");
 
 
   // Make "send message" button clickable
@@ -63,7 +68,7 @@ async function initializeControls()
   // Allow sending messages with enter
   textBox.addEventListener("keydown", (event) => 
   {
-    if (event.keyCode === 13) 
+    if (event.key === "Enter") 
     {
       event.preventDefault(); 
       submitButton.click(); 
@@ -105,12 +110,10 @@ async function initializeControls()
   // Set up box location dropdown 
   getSetting("shoutboxPosition", "default").then(function(value) 
   {
-    // Load and apply saved setting
     locationDropdown.value = value;
     saveSetting("shoutboxPosition", value);
     moveShoutBox(value);
     
-    // Make dropdown work
     locationDropdown.addEventListener("change", function() 
     {
       moveShoutBox(this.value);
@@ -119,22 +122,53 @@ async function initializeControls()
   });
 
 
+  // Set up box size dropdown 
+  getSetting("shoutboxSize", "medium").then(function(value) 
+  {
+    sizeDropdown.value = value;
+    saveSetting("shoutboxSize", value);
+    setShoutboxSize(value);
+    
+    sizeDropdown.addEventListener("change", function() 
+    {
+      setShoutboxSize(this.value);
+      saveSetting("shoutboxSize", this.value);
+    });
+  });
+
+
   // Set up message history length dropdown 
   getSetting("msgHistoryLength", "50").then(function(value) 
   {
-    console.log("retrieving " + value + " messages");
-    // Load and apply saved setting
     historyDropdown.value = value;
     saveSetting("msgHistoryLength", value);
     historyLength = value;
-    refreshChatFull();
+    //refreshChatFull();
 
-    // Make dropdown work
     historyDropdown.addEventListener("change", function() 
     {
       historyLength = this.value;
       refreshChatFull();
       saveSetting("msgHistoryLength", this.value);
+    });
+  });
+
+
+  // Set up timestamp style dropdown 
+  getSetting("timestampStyle", "none").then(function(value) 
+  {
+    timestampDropdown.value = value;
+    timestampStyle = value;
+    reformatTimestamps();
+    scrollToBottom();
+    saveSetting("timestampStyle", value);
+
+    timestampDropdown.addEventListener("change", function() 
+    {
+      timestampStyle = this.value;
+      reformatTimestamps();
+      scrollToBottom();
+      saveSetting("timestampStyle", this.value);
     });
   });
 
@@ -162,26 +196,7 @@ async function initializeControls()
   });
 
 
-  // Set up "Show timestamps" checkbox
-  getSetting("showTimestamps", false).then(function(value) 
-  {
-    // Load and apply saved setting
-    timestampCheckbox.checked = value;
-    saveSetting("showTimestamps", value);
-    enableTimestamps(value);
-    
-    // Make checkbox work
-    timestampCheckbox.addEventListener("change", function() 
-    {
-      // Set state, save option to browser and scroll to bottom to account for longer messages
-      enableTimestamps(this.checked);
-      saveSetting("showTimestamps", this.checked);
-      scrollToBottom();
-    });
-  });
-
-
-  // Set up "Show timestamps" checkbox
+  // Set up checkbox for removing flooding messages
   getSetting("clearOldMessages", true).then(function(value) 
   {
     // Load and apply saved setting
@@ -194,7 +209,7 @@ async function initializeControls()
     {
       // Set state, save option to browser and clear excess messages
       clearMessages = this.checked;
-      askForHistory();
+      refreshChatFull();
       saveSetting("clearOldMessages", this.checked);
     });
   });
@@ -218,10 +233,75 @@ async function initializeControls()
       saveSetting("useLocalhost", this.checked);
     });
   });
+
+
+  // Set up new thread feed checkbox
+  getSetting("showNewThreads", true).then(function(value) 
+  {
+    // Load and apply saved setting
+    newThreadCheckbox.checked = value;
+    saveSetting("showNewThreads", value);
+    showNewThreads = value;
+    //refreshChatFull();
+    
+    // Make checkbox work
+    newThreadCheckbox.addEventListener("change", function() 
+    {
+      // Set state, save option to browser and clear excess messages
+      showNewThreads = this.checked;
+      refreshChatFull();
+      saveSetting("showNewThreads", this.checked);
+    });
+  });
+
+
+  // Set up "enable greentexting" checkbox
+  getSetting("enableGreentext", true).then(function(value) 
+  {
+    // Load and apply saved setting
+    greentextCheckbox.checked = value;
+    enableGreentext = value;
+    //refreshChatFull();
+    
+    // Make checkbox work
+    greentextCheckbox.addEventListener("change", function() 
+    {
+      // Set state, save option to browser and clear excess messages
+      enableGreentext = this.checked;
+      refreshChatFull();
+      saveSetting("enableGreentext", this.checked);
+    });
+  });
+
+  // Set up ID debug checkbox
+  getSetting("showIDs", false).then(function(value) 
+  {
+    // Load and apply saved setting
+    idCheckbox.checked = value;
+    showIDs = value;
+    
+    // Make checkbox work
+    idCheckbox.addEventListener("change", function() 
+    {
+      // Set state, save option to browser and clear excess messages
+      showIDs = this.checked;
+      refreshChatFull();
+      saveSetting("showIDs", this.checked);
+    });
+  });
+
+  refreshChatFull();
+
+  // Write extension version to options
+  shoutboxVersion.textContent = getVersion();
 }
 
 let clearMessages = null;
 let useLocalhost = null;
+let showNewThreads = null;
+let timestampStyle = null;
+let enableGreentext = null;
+let showIDs = null;
 
 
 
@@ -275,6 +355,30 @@ function moveShoutBox(position)
 
 
 
+function setShoutboxSize(size)
+{
+  const shoutbox = document.querySelector("#shoutboxBox");
+
+  if (size === "small")
+  {
+    shoutbox.style.height = "128px";
+  }
+  else if (size === "medium")
+  {
+    shoutbox.style.height = "256px";
+  }
+  else if (size === "large")
+  {
+    shoutbox.style.height = "384px";
+  }
+  else if (size === "huge")
+  {
+    shoutbox.style.height = "512px";
+  }
+}
+
+
+
 // Save a value to browser
 function saveSetting(key, value) 
 {
@@ -319,7 +423,8 @@ function insertAfter(newNode, referenceNode)
 let messageQueue = [];
 let messageIDs = [];
 
-async function addMessage(username, userID, messageContent, unixTime, messageID)
+//    function  addThread(type, username, userID, title,          unixTime, messageID, link)
+async function addMessage(type, username, userID, messageContent, unixTime, messageID, extra)
 {
   // Skip if duplicate
   if (messageIDs.includes(messageID)) 
@@ -329,7 +434,7 @@ async function addMessage(username, userID, messageContent, unixTime, messageID)
   messageIDs.push(messageID);
 
   // Add if new
-  const message = { username, userID, messageContent, unixTime, messageID };
+  const message = { type, username, userID, messageContent, unixTime, messageID, extra };
   messageQueue.push(message);
 
   if (messageQueue.length === 1) 
@@ -338,11 +443,9 @@ async function addMessage(username, userID, messageContent, unixTime, messageID)
   }
 }
 
-
-
 async function processMessage() 
 {
-  const { username, userID, messageContent, unixTime, messageID } = messageQueue[0];
+  const { type, username, userID, messageContent, unixTime, messageID, extra } = messageQueue[0];
   const avatarURL = getAvatarURL(userID, "s", username);
   const messageList = document.querySelector(".shoutboxMessages");
 
@@ -359,19 +462,11 @@ async function processMessage()
   messageContainer.appendChild(timestampContainer);
   const timestamp = document.createElement("span");
   timestamp.className = "muted shoutboxTimestampText";
-  timestamp.textContent = formatTimestamp(unixTime + " ");
+  timestamp.textContent = getFormattedTimestamp(unixTime);
   timestamp.setAttribute("data-timestamp", unixTime);
   timestampContainer.appendChild(timestamp);
-
-  if (timestampsEnabled)
-  {
-    timestampContainer.style.display = "inline";
-  }
-  else
-  {
-    timestampContainer.style.display = "none";
-  }
-
+  timestampContainer.style.display = timestampStyle == "none" ? "none" : "inline";
+  
 
   // Profile picture
   const pfpImage = new Image();
@@ -381,32 +476,63 @@ async function processMessage()
 
   const pfpContainer = document.createElement("a");
   pfpContainer.appendChild(pfpImage);
-  pfpContainer.className = "avatar Av" + userID + "m";  // Only medium size is available for your own avatar on front page
+  pfpContainer.className = "avatar Av" + userID + "m";  // Only medium size is reliably available for your own avatar on front page
   pfpContainer.id = "shoutboxPfpContainer";
   pfpContainer.href = "members/" + userID; 
   messageContainer.appendChild(pfpContainer);
 
 
   // Username
-
-  // Old method of getting username from ID. Allows usernames to stay up to date if changed, but is overall a shit way of handling it
-  //const profileFullURL = await getRedirectedURL(getProfileURL(userID));
-  //username = getFastUsernameFromFullURL(profileFullURL);  // Inaccurate results, but fast
-  //const username = getRealUsernameFromURL(getProfileURL(userID)); // Accurate result, but slow. Also doesn't work
-
   const usernameText = document.createElement("a");
   usernameText.textContent = username;
   usernameText.href = "members/" + userID; 
   usernameText.class = "username";
+  usernameText.id = "shoutboxUsername";
   messageContainer.appendChild(usernameText);
 
-  // Message
-  const messageText = document.createElement("span")
-  messageText.innerHTML = ": " + linkify(messageContent);  // Detect links and make them clickable
-  messageContainer.appendChild(messageText);
+
+  // New message or thread
+  if (type === "message")
+  {
+    // Create element
+    const messageText = document.createElement("span")
+    messageText.innerHTML = ": " + linkify(messageContent);  // Detect links and make them clickable
+    messageContainer.appendChild(messageText);
+
+    // Greentextify
+    if (enableGreentext && messageContent.charAt(0) == ">") 
+    {
+      messageText.style.color = "#00C000";
+    }
+
+    // If received a username color from server
+    if (extra != null) 
+    {
+      usernameText.setAttribute("style", "color: " + extra + " !important;"); // Extra: Color for messages
+    }
+  }
+  else if (type === "thread")
+  {
+    const messageText = document.createElement("a")
+    messageText.textContent = messageContent;  
+    messageText.href = extra; // Extra: Link for threads
+    messageText.style.fontStyle = "italic";
+    usernameText.style.fontStyle = "italic";
+    messageContainer.appendChild(messageText);
+  }
+
+
+  // Debug message ID
+  const messageIDText = document.createElement("span");
+  messageIDText.textContent = (` [${messageID}]`).toUpperCase();
+  messageIDText.style.color = "yellow";
+  messageContainer.appendChild(messageIDText);
+  messageIDText.style.display = showIDs ? "inline" : "none";
+
 
   // Add full message element to shoutbox
   messageList.appendChild(messageContainer);
+  reorderPfpTimestamp(timestampContainer);
   scrollToBottom();
 
 
@@ -423,7 +549,7 @@ async function processMessage()
 
 function getAvatarURL(userID, size, username) // Size: s, m, l
 {
-  if (userID === 0)
+  if (userID == "0")
   {
     // Moss easter egg because I miss moss
     if (username != null)
@@ -448,9 +574,17 @@ function getAvatarURL(userID, size, username) // Size: s, m, l
 
 function getUserFolder(userID)
 {
-  // Return the folder that the user's data resides in on the server
+  // Return the folder that the user's data resides in on the wynncraft forums server
   // Guessing this is used for performance reasons on the forums? 
   return Math.floor(userID / 1000);
+}
+
+
+
+function getVersion()
+{
+  const manifest = chrome.runtime.getManifest();
+  return manifest.version;
 }
 
 
@@ -510,23 +644,6 @@ function getCurrentUserID()
   {
     return 0;
   }
-
-  // STARRY NIGHT EXCLUSIVE LEGACY
-  /*
-  // Extract id from profile picture file name
-  const miniPfp = document.querySelector(".miniMe");
-
-  if (miniPfp === null)
-  {
-    // If not signed in
-    return 0;
-  }
-
-  const pfpSrc = miniPfp.src;                       // For example "data/avatars/s/39/39067.jpg?1680634104"
-  const userID = pfpSrc.match(/\/(\d+)\.jpg/)[1];   // Use regex to get only id
-  
-  return userID;
-  */
 }
 
 
@@ -587,14 +704,6 @@ async function setGuestID()
 
 
 
-
-function getUserColor(userID)
-{
-
-}
-
-
-
 function getMessageBoxContents()
 {
   const textBox = document.getElementById("shoutboxInputField");
@@ -608,7 +717,6 @@ function scrollToBottom()
   var shoutboxList = document.querySelector("#shoutboxBox");
   shoutboxList.scrollTop = shoutboxList.scrollHeight;
 }
-
 
 
 
@@ -650,9 +758,10 @@ function initializeWebSocket()
     connecting = false;
     refreshChatFull();
 
-    // Send extension version to server for future compatibility
-    const manifest = chrome.runtime.getManifest();
-    const version = manifest.version;
+
+    // Send extension version to server in case of future compatibility issues
+    // Shouldn't break anything if removed when using latest version
+    const version = getVersion();
 
     const data = 
     {
@@ -684,6 +793,11 @@ function initializeWebSocket()
     {
       // Remove message locally in real time
       removeMessage(parsedData.messageID);
+    }
+    else if (type === "color")
+    {
+      // Add color retrospectively through server, since fetching might take a long time
+      colorizeName(parsedData.messageID, parsedData.color);
     }
     // Don't process at all if type is unknown
   });
@@ -764,16 +878,17 @@ function restartSocket()
 
 function receiveMessage(data)
 {
-  if (data.type === "message")
+  // Discard thread announcements if they're off
+  if (!showNewThreads && data.type === "thread")
   {
-    // User message
-    const username = data.username;
-    const userID = data.userID;
-    const message = data.message;
-    const unixTime = data.unixTime;
-    const messageID = data.messageID;
+    return;
+  }
 
-    addMessage(username, userID, message, unixTime, messageID);
+  // Process messages
+  if (data.type === "message" || data.type === "thread")
+  {
+    // User message or new thread
+    addMessage(data.type, data.username, data.userID, data.message, data.unixTime, data.messageID, data.extra);
 
     // "Make room" by deleting oldest message, if user so desires
     if (clearMessages)
@@ -781,9 +896,9 @@ function receiveMessage(data)
       trimOldMessages();
     }
   }
-  else
+  else if (data.type === "generic")
   {
-    // New thread, outdated plugin, etc announcements. To-be-implemented if cloudflare ever stops sucking dick
+    // Announcements like outdated plugin, etc
     receiveGeneric(data);
   }
 }
@@ -820,6 +935,7 @@ function receiveGeneric(data)
 
 
 
+// Locally remove a message that's already been received
 function removeMessage(messageID)
 {
   const messageElement = document.getElementById(messageID);
@@ -827,6 +943,18 @@ function removeMessage(messageID)
   if (messageElement)
   {
     messageElement.remove();
+  }
+}
+
+
+// Add color to a message that's already been received
+function colorizeName(messageID, hex)
+{
+  const usernameText = document.getElementById(messageID).querySelector("#shoutboxUsername");
+  
+  if (usernameText)
+  {
+    usernameText.setAttribute("style", "color: " + hex + " !important;");
   }
 }
 
@@ -954,7 +1082,79 @@ function toggleOptions()
 
 
 
-function formatTimestamp(unixTime) 
+// Define timestamp visibility, location and time display
+function reformatTimestamps()
+{
+  const timestamps = document.querySelectorAll(".shoutboxTimestamp");
+
+  if (timestampStyle == "none")
+  {
+    // Just hide timestamps
+    timestamps.forEach((timestamp) =>
+    {
+      timestamp.style.display = "none";
+    });
+  }
+  else
+  {
+    timestamps.forEach((timestamp) =>
+    {
+      // Change timestamp format
+      const timestampText = timestamp.querySelector(".shoutboxTimestampText");
+
+      if (timestampText)
+      {
+        const unixTime = timestampText.getAttribute("data-timestamp");
+        timestampText.textContent = getFormattedTimestamp(unixTime);
+      }
+
+
+      // Make element visible if it wasn't already
+      timestamp.style.display = "inline";
+
+
+      // Determine order
+      
+      reorderPfpTimestamp(timestamp);
+    });
+  }
+}
+
+
+
+function reorderPfpTimestamp(timestampElement)
+{
+  const parent = timestampElement.parentElement;
+  pfpElement = parent.querySelector("#shoutboxPfpContainer");
+
+  if (timestampStyle == "forum")
+  {
+    parent.insertBefore(timestampElement, pfpElement);
+  }
+  else if (timestampStyle == "classic")
+  {
+    parent.insertBefore(pfpElement, timestampElement);
+  }
+}
+
+
+
+function getFormattedTimestamp(unixTime)
+{
+  switch (timestampStyle) 
+  {
+    case "forum":
+      return getForumTimestamp(unixTime) + " ";
+    case "classic":
+      return getClassicTimestamp(unixTime) + " ";
+    default:
+      return "";
+  }
+}
+
+
+
+function getForumTimestamp(unixTime) 
 {
   const now = new Date();
   const messageTime = new Date(unixTime * 1000);
@@ -1013,6 +1213,20 @@ function formatTimestamp(unixTime)
 
 
 
+function getClassicTimestamp(unixTime) 
+{
+  const options = 
+  {
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true
+  };
+
+  return new Date(unixTime * 1000).toLocaleTimeString(navigator.language, options);
+}
+
+
+
 function refreshTimestamps()
 {
   const timestamps = document.querySelectorAll(".shoutboxTimestampText");
@@ -1020,36 +1234,12 @@ function refreshTimestamps()
   timestamps.forEach((timestamp) =>
   {
     const unixTime = timestamp.getAttribute('data-timestamp');
-    timestamp.textContent = formatTimestamp(unixTime);
+    timestamp.textContent = getFormattedTimestamp(unixTime);
   });
 }
 
 // Refresh timestamps every minute
 setInterval(refreshTimestamps, 60000);
-
-
-
-let timestampsEnabled = false;
-function enableTimestamps(enabled)
-{
-  const timestamps = document.querySelectorAll(".shoutboxTimestamp");
-  timestampsEnabled = enabled;
-
-  if (enabled)
-  {
-    timestamps.forEach((element) =>
-    {
-      element.style.display = "inline";
-    });
-  }
-  else
-  {
-    timestamps.forEach((element) =>
-    {
-      element.style.display = "none";
-    });
-  }
-}
 
 
 

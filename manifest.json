@@ -1,6 +1,6 @@
 {
   "name": "Shoutbox",
-  "version": "1.4",
+  "version": "1.5",
   "description": "It's like shoutbox but worse",
   "manifest_version": 3,
   "permissions": ["storage"],

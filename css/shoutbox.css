@@ -48,7 +48,6 @@
 #shoutboxPfpContainer
 {
 	padding-right: 3px !important;
-	padding-left: 3px !important;
 
 	/* Prevent some shoutbot positions from overriding style */
 	margin-right: 0 !important;
@@ -74,16 +73,29 @@
 
 .shoutboxControls
 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 5px;
+  	display: flex;
+  	justify-content: space-between;
+  	align-items: center;
+  	width: 100%;
+  	gap: 5px;
 }
 
 #shoutboxInputField 
 {
-  flex: 1;
-  font-size: 13px;
-  width: 100%;
+  	flex: 1;
+  	font-size: 13px;
+  	width: 100%;
+}
+
+
+
+.shoutboxDropdown
+{
+	display: flex;
+	align-items: center;
+}
+#shoutboxLocation, #shoutboxSize, #msgHistoryLength, #timestampType
+{
+	flex: 1;
+	margin-left: 4px;
 }
